@@ -1,0 +1,66 @@
+Apache_SuperSet
+
+superset_config.py
+
+cat superset_config.py
+SQLALCHEMY_DATABASE_URI = 'postgresql+psycopg2://superset_user:ilg007d@192.168.1.6/superset_db'
+SECRET_KEY = 'iodwNcvHkrJeJMhjwRmCtqAj6KtC4gnJca4xN5MPIGf++GhgigLG/R2h'
+# Redis Caching
+from cachelib.redis import RedisCache
+CACHE_NO_NULL_WARNING = True
+CACHE_CONFIG = {
+    'CACHE_TYPE': 'RedisCache',
+    'CACHE_DEFAULT_TIMEOUT': 86400,
+    'CACHE_KEY_PREFIX': 'superset_',
+    'CACHE_REDIS_HOST': '192.168.1.6',
+    'CACHE_REDIS_PORT': 6379,
+    'CACHE_REDIS_DB': 0,
+    'CACHE_REDIS_URL': 'redis://192.168.1.6:6379/0'
+}
+
+
+DATA_CACHE_CONFIG = {
+    'CACHE_TYPE': 'RedisCache',
+    'CACHE_DEFAULT_TIMEOUT': 60 * 60 * 24, # 1 day default (in secs)
+    'CACHE_KEY_PREFIX': 'superset_',
+    'CACHE_REDIS_URL': 'redis://192.168.1.6:6379/0',
+}
+
+# Long running query handling using Celery workers
+class CeleryConfig(object):
+    BROKER_URL = 'redis://192.168.1.6:6379/0'
+    CELERY_IMPORTS = ('superset.sql_lab',
+                      'superset.tasks'
+    )
+    CELERY_RESULT_BACKEND = 'redis://192.168.1.6:6379/0'
+    CELERYD_LOG_LEVEL = 'DEBUG'
+    CELERYD_PREFETCH_MULTIPLIER = 10
+    CELERY_ACKS_LATE = True
+    CELERY_ANNOTATIONS = {
+        'sql_lab.get_sql_results': {
+            'rate_limit': '100/s',
+        },
+        'email_reports.send': {
+            'rate_limit': '1/s',
+            'time_limit': 120,
+            'soft_time_limit': 150,
+            'ignore_result': True,
+        },
+    }
+#    CELERYBEAT_SCHEDULE = {
+#        'email_reports.schedule_hourly': {
+#            'task': 'email_reports.schedule_hourly',
+#            'schedule': crontab(minute=1, hour='*'),
+#        },
+#    }
+
+CELERY_CONFIG = CeleryConfig
+
+# Persisting results from running query handling using Celery workers
+from cachelib.redis import RedisCache
+RESULTS_BACKEND = RedisCache(host='192.168.1.6', port=6379, key_prefix='superset_')
+
+# Disable MessagePack and PyArrow for results serialization
+RESULTS_BACKEND_USE_MSGPACK = False
+
+CELERY_STORE_ERRORS_EVEN_IF_IGNORED = True
