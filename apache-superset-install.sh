@@ -137,7 +137,7 @@ After=network.target
 
 [Service]
 User=$USER
-Group=www-data
+Group=$USER
 WorkingDirectory=/home/$USER
 ExecStart=/usr/local/bin/gunicorn -w 4 -b 0.0.0.0:8088 'superset.app:create_app()'
 
